@@ -2,6 +2,7 @@ import cherrypy
 import namebucket
 import sys
 import threading
+import time
 
 class NameEndpoint:
   exposed = True
@@ -15,13 +16,19 @@ class NameEndpoint:
     cherrypy.response.status = 203 if timestamp else 404  
     return timestamp
 
+def shutdown():
+  time.sleep(2)
+  namebucket.save_names()
+  sys.exit(0)
+
 class UpdateEndpoint:
   exposed = True
   def PUT(self, data):
     with open('namebucket.py', 'w') as f:
       f.write(data)
     print('Shutting down for update...')
-    sys.exit(0)
+    threading.Thread(target=shutdown).start()
+    return
   
 def run_engine():
   print('Starting...')
