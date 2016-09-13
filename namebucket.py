@@ -88,8 +88,26 @@ def catch_name(token, name, length, interval, request):
       return
     time.sleep(interval)
 
-#def elevate_priority():
-#  psutil.Process(os.getpid()).nice(-15)
+'''
+Names to dropcatch
+'''
+names = {}
+def queue(name, timestamp):
+  print ("Queued %s" % name)
+  for n, t in names.items():
+    if abs(t - timestamp) < 80:
+      return False
+  names[name] = timestamp
+  return True
+
+def find(name):
+  if name in names:
+    return names[name]
+  return None
+
+def save_names():
+  with open('names.json', 'w') as f:
+    f.write(json.dumps(names))
 
 def main():
   username = 'user'
