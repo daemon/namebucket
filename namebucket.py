@@ -80,10 +80,7 @@ def check_name(token, name):
 def catch_name(token, name, length, interval, request):
   start = time.time()
   while start + length > time.time():    
-    avail = check_name(token, name)
-    os.system('date')
-    print('Available: %s' % avail)
-    if avail:
+    if check_name(token, name):
       request.execute(name)
       return
     time.sleep(interval)
@@ -93,6 +90,7 @@ Names to dropcatch
 '''
 names = {}
 def queue(name, timestamp):
+  save_names()
   print ("Queued %s" % name)
   for n, t in names.items():
     if abs(t - timestamp) < 80:
@@ -109,24 +107,29 @@ def save_names():
   with open('names.json', 'w') as f:
     f.write(json.dumps(names))
 
-def main():
+def start():
   username = 'user'
   password = 'password'
-  response = login_auth(username, password)
-  info = login_account(username, password)
-  print(info)
-  if not info:
-    print('Failed to login to account server!')    
-    return
-  request = ChangeNameRequest(info[1], info[0], password)
-  print(request.csrf_tok)
-  try:
-    auth_bearer = response['accessToken']
-  except KeyError:
-    print(response['errorMessage'])
-    return
-  print("Bearer token: %s" % auth_bearer)
-  name = 'poor'
-  catch_name(auth_bearer, name, 80, 0.15, request)  
+  while True:
+    for name in list(names):
+      ts = names[name]
+      if ts < time.time():
+        del names[name]
+        continue
+      if ts - time.time() < 80:
+        print('Attempting to catch %s...' % name)
+        del names[name]
+        response = login_auth(username, password)
+        info = login_account(username, password)
+        if not info:
+          print('Failed to login to account server!')
+          continue
+      request = ChangeNameRequest(info[1], info[0], password)
+      try:
+        auth_bearer = response['accessToken']
+      except KeyError:
+        print(response['errorMessage'])
+        continue
+      catch_name(auth_bearer, name, 80, 0.15, request)
+    time.sleep(5)
 
-main()

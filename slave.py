@@ -22,13 +22,18 @@ def shutdown():
   sys.exit(0)
 
 class UpdateEndpoint:
-  exposed = True
+  @cherrypy.expose
   def PUT(self, data):
     with open('namebucket.py', 'w') as f:
       f.write(data)
     print('Shutting down for update...')
     threading.Thread(target=shutdown).start()
     return
+
+class FloodEndpoint:
+  @cherrypy.expose
+  def POST(self, name):
+    pass #TODO
   
 def run_engine():
   print('Starting...')
@@ -40,5 +45,6 @@ def run_engine():
     print('Started.')
     cherrypy.engine.block()
   threading.Thread(target=run).start()
+  namebucket.start()
 
 run_engine()
