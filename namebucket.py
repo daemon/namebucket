@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import random
 import requests
 import time
 
@@ -108,10 +109,29 @@ def save_names():
     f.write(json.dumps(names))
 
 def start():
-  username = 'user'
-  password = 'password'
+  username = ''
+  password = ''
+  last = 0
+  delay = 0
   while True:
+    if last + delay < time.time():
+      response = login_auth(username, password)
+      info = login_account(username, password)
+      if not info:
+        print('Failed to login to account server!')
+        time.sleep(5)
+        continue
+      request = ChangeNameRequest(info[1], info[0], password)
+      try:
+        auth_bearer = response['accessToken']
+      except KeyError:
+        print(response['errorMessage'])
+        time.sleep(5)
+        continue
+      last = time.time()
+      delay = 3600 + random.randint(0, 600)
     for name in list(names):
+      print(auth_bearer)
       ts = names[name]
       if ts < time.time():
         del names[name]
@@ -119,17 +139,6 @@ def start():
       if ts - time.time() < 80:
         print('Attempting to catch %s...' % name)
         del names[name]
-        response = login_auth(username, password)
-        info = login_account(username, password)
-        if not info:
-          print('Failed to login to account server!')
-          continue
-      request = ChangeNameRequest(info[1], info[0], password)
-      try:
-        auth_bearer = response['accessToken']
-      except KeyError:
-        print(response['errorMessage'])
-        continue
       catch_name(auth_bearer, name, 80, 0.15, request)
     time.sleep(5)
 
