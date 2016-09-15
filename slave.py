@@ -28,11 +28,6 @@ class UpdateEndpoint:
     print('Shutting down for update...')
     threading.Thread(target=shutdown).start()
     return
-
-class FloodEndpoint:
-  @cherrypy.expose
-  def POST(self, name):
-    pass #TODO
   
 def run_engine():
   print('Starting...')

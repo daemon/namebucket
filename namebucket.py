@@ -2,7 +2,6 @@ import datetime
 import json
 import os
 import re
-import random
 import requests
 import sys
 import time
@@ -54,7 +53,7 @@ def login_auth(username, password):
     "username": "%s",
     "password": "%s"
   }''' % (username, password)
-  r = requests.post('https://%s/authenticate', (login_auth.authserver_host, payload))
+  r = requests.post('https://%s/authenticate' % login_auth.authserver_host, payload)
   return json.loads(r.content.decode('utf-8'))
 login_auth.authserver_host = 'authserver.mojang.com'
 
@@ -89,7 +88,7 @@ def catch_name(token, name, length, request):
       print('Available at %s' % str(datetime.datetime.now()))
       request.execute(name)
       return
-    time.sleep(1)
+    time.sleep(0.022)
 
 '''
 Names to dropcatch
@@ -127,8 +126,8 @@ def load_conf():
       return json.loads(f.read())
   except:
     config = dict(username='username', password='password')
-    config['api-mojang-host'] = ''
-    config['authserver-mojang-host'] = ''
+    config['mojang-api-host'] = ''
+    config['mojang-authserver-host'] = ''
     with open('config.json', 'w') as f:
       f.write(json.dumps(config, indent=2))
     sys.exit(0)
@@ -162,15 +161,15 @@ def start():
         time.sleep(5)
         continue
       last = time.time()
-      delay = 7200 + random.randint(0, 600)
+      delay = 14400
     for name in list(names):
       ts = names[name]
       if ts < time.time():
         del names[name]
         continue
-      if ts - time.time() < 40:
+      if ts - time.time() < 6:
         print('Attempting to catch %s...' % name)
         del names[name]
-        catch_name(auth_bearer, name, 80, request)
-    time.sleep(5)
+        catch_name(auth_bearer, name, 12, request)
+    time.sleep(0.5)
 
