@@ -18,7 +18,6 @@ class NameEndpoint:
 
 def shutdown():
   time.sleep(2)
-  namebucket.save_names()
   sys.exit(0)
 
 class UpdateEndpoint:

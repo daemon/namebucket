@@ -1,11 +1,12 @@
 import json
 import requests
+import time
 
 def print_help():
   def print_line(usage, desc):
     print('%-16s: %s' % (usage, desc))
   print_line('?', 'This menu')
-  print_line('a <name> <time>', 'Adds a name to be caught. Timestamp is in Unix time (secs).')
+  print_line('a <name> <time>', 'Adds a name to be caught, time formatted in %yyyy/%mm/%dd/%h:%m:%s.')
   print_line('d <name>', 'Removes the name from catching queue')
   print_line('u', 'Updates all slaves with the current namebucket.py')
   print_line('q', 'Quit')
@@ -13,6 +14,7 @@ def print_help():
 def add_name(slaves, name, timestamp):
   for slave in slaves:
     endpoint = "http://%s/name" % slave
+    timestamp = int(time.mktime(time.strptime(timestamp, '%Y/%m/%d/%H:%M:%S')))
     try:
       r = requests.post(endpoint, data=dict(name=name, timestamp=timestamp))
       print("%-24s Added: %s" % (slave, json.loads(r.content.decode('utf-8'))))
@@ -53,7 +55,7 @@ def main():
     if cmd == '?':
       print_help()
     elif cmd == 'a' and len(toks) >= 3:
-      add_name(slaves, toks[1], int(toks[2]))
+      add_name(slaves, toks[1], toks[2])
     elif cmd == 'd' and len(toks) >= 2:
       del_name(toks[1])
     elif cmd == 'u':

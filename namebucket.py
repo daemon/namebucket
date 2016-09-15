@@ -1,8 +1,10 @@
+import datetime
 import json
 import os
 import re
 import random
 import requests
+import sys
 import time
 
 class ChangeNameRequest:
@@ -52,12 +54,13 @@ def login_auth(username, password):
     "username": "%s",
     "password": "%s"
   }''' % (username, password)
-  r = requests.post('https://authserver.mojang.com/authenticate', payload)
+  r = requests.post('https://%s/authenticate', (login_auth.authserver_host, payload))
   return json.loads(r.content.decode('utf-8'))
+login_auth.authserver_host = 'authserver.mojang.com'
 
 def check_name(token, name):
   with requests.Session() as s:
-    url = 'https://api.mojang.com/user/profile/agent/minecraft/name/%s' % name
+    url = 'https://%s/user/profile/agent/minecraft/name/%s' % (check_name.api_host, name)
     headers = {}
     headers["Access-Control-Request-Headers"] = "authorization"
     headers["Access-Control-Request-Method"] = "GET"
@@ -77,14 +80,16 @@ def check_name(token, name):
     headers["Accept"] = "application/json, text/javascript, */*; q=0.01"
     r = s.get(url, headers=headers)
   return r.status_code == 404
+check_name.api_host = 'api.mojang.com'
 
-def catch_name(token, name, length, interval, request):
+def catch_name(token, name, length, request):
   start = time.time()
   while start + length > time.time():    
     if check_name(token, name):
+      print('Available at %s' % str(datetime.datetime.now()))
       request.execute(name)
       return
-    time.sleep(interval)
+    time.sleep(1)
 
 '''
 Names to dropcatch
@@ -108,9 +113,37 @@ def save_names():
   with open('names.json', 'w') as f:
     f.write(json.dumps(names))
 
+def load_names():
+  try:
+    with open('names.json') as f:
+      names = json.loads(f.read())
+  except:
+    with open('names.json', 'w') as f:
+      pass
+
+def load_conf():
+  try:
+    with open('config.json') as f:
+      return json.loads(f.read())
+  except:
+    config = dict(username='username', password='password')
+    config['api-mojang-host'] = ''
+    config['authserver-mojang-host'] = ''
+    with open('config.json', 'w') as f:
+      f.write(json.dumps(config, indent=2))
+    sys.exit(0)
+
 def start():
-  username = ''
-  password = ''
+  cfg = load_conf()
+  username = cfg['username']
+  password = cfg['password']
+  mojang_api_host = cfg['mojang-api-host']
+  mojang_authsrv_host = cfg['mojang-authserver-host']
+  if mojang_api_host:
+    check_name.api_host = mojang_api_host
+  if mojang_authsrv_host:
+    login_auth.authserver_host = mojang_authsrv_host
+  load_names()
   last = 0
   delay = 0
   while True:
@@ -129,16 +162,15 @@ def start():
         time.sleep(5)
         continue
       last = time.time()
-      delay = 3600 + random.randint(0, 600)
+      delay = 7200 + random.randint(0, 600)
     for name in list(names):
-      print(auth_bearer)
       ts = names[name]
       if ts < time.time():
         del names[name]
         continue
-      if ts - time.time() < 80:
+      if ts - time.time() < 40:
         print('Attempting to catch %s...' % name)
         del names[name]
-      catch_name(auth_bearer, name, 80, 0.15, request)
+        catch_name(auth_bearer, name, 80, request)
     time.sleep(5)
 
